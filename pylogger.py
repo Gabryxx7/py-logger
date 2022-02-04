@@ -3,7 +3,6 @@ from datetime import datetime
 import colorama
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
-from GUI.log_widget import LogWidget
 import os
 from pushbullet import PushBullet
 from pywebio.input import *
@@ -39,13 +38,19 @@ class Log(object):
     def __init__(self):
         self.logging_levels = {'a':0, 'd':1, 'i':2, 's':2, 'w':3, 'e':4}
         self.min_level = 'a'
-        self.log_file = "log.txt"
-        self.file = open(self.log_file, "w+")
+        self.logs_folder = "./Logs/"
+        self.log_filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+        if not os.path.exists(self.logs_folder):
+            os.makedirs(self.logs_folder)
+        self.log_file = open(self.logs_folder+self.log_filename, "w+")
         self.enabled = True
         self.enable_console = True
         self.enable_widget = True
         self.save_to_file = True
         self.logWidget = None
+        self.pb = None
+        self.pb_enabled = False
+        self.pb_notif_levels = []
 
         self.colors = {'red': LogColor('red', "\033[91m", "<font color=\"Red\">"),
                        'green': LogColor('green', "\033[92m", "<font color=\"Green\">"),
@@ -53,6 +58,16 @@ class Log(object):
                        'blue': LogColor('blue', "\033[94m", "<font color=\"Blue\">"),
                        'orange': LogColor('orange', "\033[93m", "<font color=\"Orange\">"),
                        'reset': LogColor('orange', "\033[0;0m", "</>")}
+    def init_pushbullet(self, pb_access_token, min_notif_level=-1, notif_levels=None):
+        self.pb = PushBullet(pb_access_token)
+        self.pb_enabled = False
+        if min_notif_level > 0:
+            self.pb_notif_levels = range(min_notif_level, len(self.logging_levels))
+            self.pb_enabled = True
+        elif notif_levels is not None:
+            self.pb_notif_levels = notif_levels
+            self.pb_enabled = True
+
 
     def set_min_level(self, level):
         self.i("LOGGER", "Logging Level Changed: " + self.min_level + " - " + str(self.logging_levels[self.min_level]))
@@ -61,25 +76,25 @@ class Log(object):
     def get_min_level_index(self):
         return list(self.logging_levels.keys()).index(self.min_level)
 
-    def toggle_general(self, enabled):
+    def toggle_general_logging(self, enabled):
         self.i("LOGGER", "Logging has been " + self.status_string(enabled))
         self.enabled = enabled
 
-    def toggle_console(self, enabled):
+    def toggle_console_logging(self, enabled):
         self.i("LOGGER", "Logging CONSOLE has been " + self.status_string(enabled))
         self.enable_console = enabled
 
-    def toggle_widget(self, enabled):
+    def toggle_widget_logging(self, enabled):
         self.i("LOGGER", "Logging WIDGET has been " + self.status_string(enabled))
         self.enable_widget = enabled
 
-    def toggle_file(self, enabled):
-        self.i("LOGGER", "Logging FILE has been " + self.status_string(enabled)+": " + os.path.abspath(self.log_file))
+    def toggle_file_logging(self, enabled):
+        self.i("LOGGER", "Logging FILE has been " + self.status_string(enabled)+": " + os.path.abspath(self.log_filename))
         self.save_to_file = enabled
     
     def toggle_pushbullet(self, enabled):
-        self.i("LOGGER", "Logging PUSHBULLET has been " + self.status_string(enabled)+": " + os.path.abspath(self.log_file))
-        self.save_to_file = enabled
+        self.i("LOGGER", "Logging PUSHBULLET has been " + self.status_string(enabled)+": " + os.path.abspath(self.log_filename))
+        self.pb_enabled = enabled
 
     def status_string(self, status):
         if status:
@@ -122,14 +137,15 @@ class Log(object):
                     print(final_text)
                 if self.save_to_file:
                     try:
-                        self.file.write(timestampStr + log_text + "\n")
+                        self.log_file.write(timestampStr + log_text + "\n")
                     except Exception as e:
                         print("Exception writing to LOG File:" +str(e))
                         pass
+                if self.pb_enabled:
+                    pb.push_note("Logger Test", f"{timestampStr}{log_text}")
 
     def create_log_widget(self):
         self.logWidget = LogWidget(self)
-
 
 class LogWidget(QWidget):
     def __init__(self, logger):
@@ -153,8 +169,8 @@ class LogWidget(QWidget):
         self.console_checkbox.stateChanged.connect(self.console_checkbox_changed)
         self.widget_checkbox = QCheckBox("Widget")
         self.widget_checkbox.stateChanged.connect(self.widget_checkbox_changed)
-        self.file_checkbox = QCheckBox("File")
-        self.file_checkbox.stateChanged.connect(self.file_checkbox_changed)
+        self.log_file_checkbox = QCheckBox("File")
+        self.log_file_checkbox.stateChanged.connect(self.log_file_checkbox_changed)
 
         self.extra_layout.addWidget(self.title)
         self.extra_layout.addWidget(self.filter_label)
@@ -162,7 +178,7 @@ class LogWidget(QWidget):
         self.extra_layout.addWidget(self.enable_checkbox)
         self.extra_layout.addWidget(self.console_checkbox)
         self.extra_layout.addWidget(self.widget_checkbox)
-        self.extra_layout.addWidget(self.file_checkbox)
+        self.extra_layout.addWidget(self.log_file_checkbox)
         self.extra_layout.addStretch(1)
 
         self.main_layout.addLayout(self.extra_layout)
@@ -180,19 +196,19 @@ class LogWidget(QWidget):
         self.logger.set_min_level(self.filter_combobox.itemData(value))
 
     def enable_checkbox_changed(self, value):
-        self.logger.setEnabled(value)
+        self.logger.toggle_general_logging(value)
         self.check_log_status()
 
     def console_checkbox_changed(self, value):
-        self.logger.setConsoleEnabled(value)
+        self.logger.toggle_console_logging(value)
         self.check_log_status()
 
     def widget_checkbox_changed(self, value):
-        self.logger.setWidgetEnabled(value)
+        self.logger.toggle_widget_logging(value)
         self.check_log_status()
 
-    def file_checkbox_changed(self, value):
-        self.logger.setFileEnabled(value)
+    def log_file_checkbox_changed(self, value):
+        self.logger.toggle_file_logging(value)
         self.check_log_status()
 
     def check_log_status(self):
@@ -201,8 +217,8 @@ class LogWidget(QWidget):
         self.enable_checkbox.setChecked(self.logger.enabled)
         self.console_checkbox.setChecked(self.logger.enable_console)
         self.widget_checkbox.setChecked(self.logger.enable_widget)
-        self.file_checkbox.setChecked(self.logger.save_to_file)
+        self.log_file_checkbox.setChecked(self.logger.save_to_file)
 
         self.console_checkbox.setEnabled(self.logger.enabled)
         self.widget_checkbox.setEnabled(self.logger.enabled)
-        self.file_checkbox.setEnabled(self.logger.enabled)
+        self.log_file_checkbox.setEnabled(self.logger.enabled)
