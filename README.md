@@ -1,6 +1,6 @@
 # py-logger
 A thread safe, color coded logger that writes to files, QtGUI/QtWidgets, PushBullet and terminal!
-![](screenshot.png =x300)
+![screenshot.png](screenshot.png)
 
 ## Features
 - Thread safe through Qt Signals/Workers
