@@ -11,6 +11,7 @@ from pywebio.output import *
 from pywebio.session import *
 import math
 import re
+import threading
 
 class VLine(QFrame):
     # a simple VLine, like the one you get from designer
@@ -211,38 +212,35 @@ class QtWaitingSpinner(QWidget):
             resultAlpha = min(1.0, max(0.0, resultAlpha))
             color.setAlphaF(resultAlpha)
         return color
-class Singleton:
-    def __init__(self, cls):
-        self._cls = cls
 
-    def Instance(self):
-        try:
-            return self._instance
-        except AttributeError:
-            self._instance = self._cls()
-            return self._instance
-
-    def __call__(self):
-        raise TypeError('Singletons must be accessed through `Instance()`.')
-
-    def __instancecheck__(self, inst):
-        return isinstance(inst, self._cls)
 class LogColor():
     def __init__(self, name, code, html):
         self.color_name = name
         self.color_code = code
         self.color_html = html
 
-@Singleton
-class Log(object):
-    def __init__(self):
+class Log():
+    _instance = None
+    _lock = threading.Lock()
+
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            with cls._lock:
+                # another thread could have created the instance
+                # before we acquired the lock. So check that the
+                # instance is still nonexistent.
+                if not cls._instance:
+                    cls._instance = super(Log, cls).__new__(cls)
+        return cls._instance
+
+    def __init__(self, logs_folder="./Logs/"):
         self.logging_levels = {'a':0, 'd':1, 'i':2, 's':2, 'w':3, 'e':4}
         self.min_level = 'a'
         self.logs_folder = "./Logs/"
         self.log_filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
         if not os.path.exists(self.logs_folder):
             os.makedirs(self.logs_folder)
-        self.log_file = open(self.logs_folder+self.log_filename, "w+")
+        self.log_file = None
         self.enabled = True
         self.enable_console = True
         self.enable_widget = True
@@ -258,15 +256,23 @@ class Log(object):
                        'blue': LogColor('blue', "\033[34m", "<font color=\"Cyan\">"),
                        'orange': LogColor('orange', "\033[93m", "<font color=\"Orange\">"),
                        'reset': LogColor('reset', "\033[0;0m", "</>")}
+
+    def stop(self):
+        if self.log_file is not None:
+            self.log_file.close()
+        
     def init_pushbullet(self, pb_access_token, min_notif_level=-1, notif_levels=None):
-        self.pb = PushBullet(pb_access_token)
-        self.pb_enabled = False
-        if min_notif_level > 0:
-            self.pb_notif_levels = range(min_notif_level, len(self.logging_levels))
-            self.pb_enabled = True
-        elif notif_levels is not None:
-            self.pb_notif_levels = notif_levels
-            self.pb_enabled = True
+        try:
+            self.pb = PushBullet(pb_access_token)
+            self.pb_enabled = False
+            if min_notif_level > 0:
+                self.pb_notif_levels = range(min_notif_level, len(self.logging_levels))
+                self.pb_enabled = True
+            elif notif_levels is not None:
+                self.pb_notif_levels = notif_levels
+                self.pb_enabled = True
+        except Exception as e:
+            self.e("LOGGER", "Error in initializing PushBullet, notifications DISABLED: {e}")
 
 
     def set_min_level(self, level):
@@ -302,16 +308,16 @@ class Log(object):
         else:
             return  "DISABLED"
 
-    def w(self, tag, text, log_to_widget=True):
+    def w(self, tag="", text="", log_to_widget=True):
         self.print("orange", tag, text, 'w', log_to_widget)
 
-    def d(self, tag, text, log_to_widget=True):
+    def d(self, tag="", text="", log_to_widget=True):
         self.print("blue", tag, text, 'd', log_to_widget)
 
-    def e(self, tag, text, log_to_widget=True):
+    def e(self, tag="", text="", log_to_widget=True):
         self.print("red", tag, text, 'e', log_to_widget)
 
-    def s(self, tag, text, log_to_widget=True):
+    def s(self, tag="", text="", log_to_widget=True):
         self.print("green", tag, text, 's', log_to_widget)
 
     def i(self, tag, text, log_to_widget=True):
@@ -324,7 +330,9 @@ class Log(object):
             if self.logging_levels[log_level] >= self.logging_levels[self.min_level]:
                 dateTimeObj = datetime.now()
                 timestampStr = dateTimeObj.strftime("%d-%b-%Y %H:%M:%S") + " - "
-                log_text = log_level + "["+str(tag)+"]: " +str(text)
+                if tag != "":
+                    tag_txt = "["+str(tag)+"]"
+                log_text = f"{log_level}{tag_txt}: {text}"
                 if self.enable_widget and log_to_widget and self.logWidget is not None:
                     try:
                         final_text = timestampStr + color.color_html + " " + log_text + color_reset.color_html
@@ -337,10 +345,11 @@ class Log(object):
                     print(final_text)
                 if self.save_to_file:
                     try:
-                        self.log_file.write(timestampStr + log_text + "\n")
+                        with open(f"{self.logs_folder}{self.log_filename}", "w+") as log_file:
+                            log_file.write(timestampStr + log_text + "\n")
+                            log_file.flush()
                     except Exception as e:
                         print("Exception writing to LOG File:" +str(e))
-                        pass
                 if self.pb_enabled:
                     pb.push_note("Logger Test", f"{timestampStr}{log_text}")
 

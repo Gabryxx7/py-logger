@@ -1,4 +1,8 @@
+Logs
 *.no_commit*
+*.nocommit*
+*.no-commit*
+*.no commit*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

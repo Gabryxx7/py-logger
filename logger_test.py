@@ -34,7 +34,7 @@ def main():
     with open("config.no_commit.yaml") as f:
         config = yaml.safe_load(f)
     pb_token = config.get("pb_access_token", "")
-    log = Log.Instance()
+    log = Log()
     # install exception hook: without this, uncaught exception would cause application to exit
     sys.excepthook = trap_exc_during_debug
     # QApplication expects the first argument to be the program name.
