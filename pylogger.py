@@ -235,20 +235,13 @@ class Log():
 
     def __init__(self, logs_folder="./Logs/"):
         self.logging_levels = {'a':0, 'd':1, 'i':2, 's':2, 'w':3, 'e':4}
-        self.min_level = 'a'
         self.logs_folder = "./Logs/"
         self.log_filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
         if not os.path.exists(self.logs_folder):
             os.makedirs(self.logs_folder)
         self.log_file = None
-        self.enabled = True
-        self.enable_console = True
-        self.enable_widget = True
-        self.save_to_file = True
         self.logWidget = None
         self.pb = None
-        self.pb_enabled = False
-        self.pb_notif_levels = []
 
         self.colors = {'red': LogColor('red', "\033[31m", "<font color=\"Red\">"),
                        'green': LogColor('green', "\033[32m", "<font color=\"Green\">"),
@@ -256,47 +249,94 @@ class Log():
                        'blue': LogColor('blue', "\033[34m", "<font color=\"Cyan\">"),
                        'orange': LogColor('orange', "\033[93m", "<font color=\"Orange\">"),
                        'reset': LogColor('reset', "\033[0;0m", "</>")}
+    
+        self.general_enabled = True
+        self.general_log_levels = list(self.logging_levels.keys())
+        self.console_enabled = True
+        self.console_log_levels = list(self.logging_levels.keys())
+        self.widget_enabled = True
+        self.widget_log_levels = list(self.logging_levels.keys())
+        self.file_enabled = True
+        self.file_log_levels = list(self.logging_levels.keys())
+        self.pb_enabled = False
+        self.pb_log_levels = ['s']
 
     def stop(self):
         if self.log_file is not None:
             self.log_file.close()
         
-    def init_pushbullet(self, pb_access_token, min_notif_level=-1, notif_levels=None):
+    def init_pushbullet(self, pb_access_token):
         try:
             self.pb = PushBullet(pb_access_token)
             self.pb_enabled = False
-            if min_notif_level > 0:
-                self.pb_notif_levels = range(min_notif_level, len(self.logging_levels))
-                self.pb_enabled = True
-            elif notif_levels is not None:
-                self.pb_notif_levels = notif_levels
-                self.pb_enabled = True
         except Exception as e:
-            self.e("LOGGER", "Error in initializing PushBullet, notifications DISABLED: {e}")
+            self.e("LOGGER", f"Error in initializing PushBullet, notifications DISABLED: {e}")
 
+    def set_general_logging_level(self, min_level=-1, levels_list=None):
+        if isinstance(min_level, str):
+            min_level = self.logging_levels[min_level]
+        if min_level > 0:
+            self.general_log_levels = [list(self.logging_levels)[i] for i in range(0, min_level)]
+        elif levels_list is not None:
+            self.general_log_levels = levels_list if isinstance(levels_list, list) else [levels_list]
+        self.i("LOGGER", f"General Logging Level Changed: {self.general_log_levels}")
 
-    def set_min_level(self, level):
-        self.i("LOGGER", "Logging Level Changed: " + self.min_level + " - " + str(self.logging_levels[self.min_level]))
-        self.min_level = level
+    def set_console_logging_level(self, min_level=-1, levels_list=None):
+        if isinstance(min_level, str):
+            min_level = self.logging_levels[min_level]
+        if min_level > 0:
+            self.console_log_levels = [list(self.logging_levels)[i] for i in range(0, min_level)]
+        elif levels_list is not None:
+            self.console_log_levels = levels_list if isinstance(levels_list, list) else [levels_list]
+        self.i("LOGGER", f"File Logging Level Changed: {self.console_log_levels}")
 
-    def get_min_level_index(self):
-        return list(self.logging_levels.keys()).index(self.min_level)
+    def set_file_logging_level(self, min_level=-1, levels_list=None):
+        if isinstance(min_level, str):
+            min_level = self.logging_levels[min_level]
+        if min_level > 0:
+            self.file_log_levels = [list(self.logging_levels)[i] for i in range(0, min_level)]
+        elif levels_list is not None:
+            self.file_log_levels = levels_list if isinstance(levels_list, list) else [levels_list]
+        self.i("LOGGER", f"File Logging Level Changed: {self.file_log_levels}")
+
+    def set_pb_logging_level(self, min_level=-1, levels_list=None):
+        if isinstance(min_level, str):
+            min_level = self.logging_levels[min_level]
+        if min_level > 0:
+            self.pb_log_levels = [list(self.logging_levels)[i] for i in range(0, min_level)]
+            self.pb_enabled = True
+        elif levels_list is not None:
+            self.pb_log_levels = levels_list if isinstance(levels_list, list) else [levels_list]
+            self.pb_enabled = True
+        self.i("LOGGER", f"PushBullet Logging Level Changed: {self.pb_log_levels}")
+
+    def set_widget_logging_level(self, min_level=-1, levels_list=None):
+        if isinstance(min_level, str):
+            min_level = self.logging_levels[min_level]
+        if min_level > 0:
+            self.widget_log_levels = [list(self.logging_levels)[i] for i in range(0, min_level)]
+        elif levels_list is not None:
+            self.widget_log_levels = levels_list if isinstance(levels_list, list) else [levels_list]
+        self.i("LOGGER", f"Widget Logging Level Changed: {self.widget_log_levels}")
+
+    def get_logging_level_index(self, level_key):
+        return list(self.logging_levels.keys()).index(level_key)
 
     def toggle_general_logging(self, enabled):
         self.i("LOGGER", "Logging has been " + self.status_string(enabled))
-        self.enabled = enabled
+        self.general_enabled = enabled
 
     def toggle_console_logging(self, enabled):
         self.i("LOGGER", "Logging CONSOLE has been " + self.status_string(enabled))
-        self.enable_console = enabled
+        self.general_enabled = enabled
 
     def toggle_widget_logging(self, enabled):
         self.i("LOGGER", "Logging WIDGET has been " + self.status_string(enabled))
-        self.enable_widget = enabled
+        self.widget_enabled = enabled
 
     def toggle_file_logging(self, enabled):
         self.i("LOGGER", "Logging FILE has been " + self.status_string(enabled)+": " + os.path.abspath(self.log_filename))
-        self.save_to_file = enabled
+        self.file_enabled = enabled
     
     def toggle_pushbullet(self, enabled):
         self.i("LOGGER", "Logging PUSHBULLET has been " + self.status_string(enabled)+": " + os.path.abspath(self.log_filename))
@@ -308,50 +348,56 @@ class Log():
         else:
             return  "DISABLED"
 
-    def w(self, tag="", text="", log_to_widget=True):
-        self.print("orange", tag, text, 'w', log_to_widget)
+    def w(self, tag="", text="", to_console=True, to_widget=True, to_file=True, to_pb=True):
+        self.print("orange", tag, text, 'w',to_console, to_widget, to_file, to_pb)
 
-    def d(self, tag="", text="", log_to_widget=True):
-        self.print("blue", tag, text, 'd', log_to_widget)
+    def d(self, tag="", text="", to_console=True, to_widget=True, to_file=True, to_pb=True):
+        self.print("blue", tag, text, 'd',to_console, to_widget, to_file, to_pb)
 
-    def e(self, tag="", text="", log_to_widget=True):
-        self.print("red", tag, text, 'e', log_to_widget)
+    def e(self, tag="", text="", to_console=True, to_widget=True, to_file=True, to_pb=True):
+        self.print("red", tag, text, 'e',to_console, to_widget, to_file, to_pb)
 
-    def s(self, tag="", text="", log_to_widget=True):
-        self.print("green", tag, text, 's', log_to_widget)
+    def s(self, tag="", text="", to_console=True, to_widget=True, to_file=True, to_pb=True):
+        self.print("green", tag, text, 's',to_console, to_widget, to_file, to_pb)
 
-    def i(self, tag, text, log_to_widget=True):
-        self.print("white", tag, text, 'i', log_to_widget)
+    def i(self, tag, text, to_console=True, to_widget=True, to_file=True, to_pb=True):
+        self.print("white", tag, text, 'i',to_console, to_widget, to_file, to_pb)
 
-    def print(self, color_name, tag, text, log_level, log_to_widget=True):
-        if self.enabled:
+    def print(self, color_name, tag, text, log_level, to_console=True, to_widget=True, to_file=True, to_pb=True):
+        if self.general_enabled:
             color = self.colors[color_name]
             color_reset = self.colors['reset']
-            if self.logging_levels[log_level] >= self.logging_levels[self.min_level]:
+            if log_level in self.general_log_levels:
                 dateTimeObj = datetime.now()
-                timestampStr = dateTimeObj.strftime("%d-%b-%Y %H:%M:%S") + " - "
+                timestampStr = f"{dateTimeObj.strftime('%d-%b-%Y %H:%M:%S')} - "
+                timestamp_length = len(timestampStr)
                 if tag != "":
                     tag_txt = "["+str(tag)+"]"
                 log_text = f"{log_level}{tag_txt}: {text}"
-                if self.enable_widget and log_to_widget and self.logWidget is not None:
-                    try:
-                        final_text = timestampStr + color.color_html + " " + log_text + color_reset.color_html
-                        self.logWidget.append(final_text + "\n")
-                    except Exception as e:
-                        print("Exception writing to LOG Widget:" + str(e))
-                        pass
-                if self.enable_console:
-                    final_text = timestampStr + color.color_code + " " + log_text + color_reset.color_code
-                    print(final_text)
-                if self.save_to_file:
-                    try:
-                        with open(f"{self.logs_folder}{self.log_filename}", "w+") as log_file:
-                            log_file.write(timestampStr + log_text + "\n")
-                            log_file.flush()
-                    except Exception as e:
-                        print("Exception writing to LOG File:" +str(e))
+                log_text = log_text.replace("\n", f"\n{'':<{timestamp_length}}")
+                if self.widget_enabled and to_widget and self.logWidget is not None:
+                    if log_level in self.widget_log_levels:
+                        try:
+                            final_text = f"{timestampStr:<{timestamp_length}}{color.color_html}{log_text}{color_reset.color_html}"
+                            self.logWidget.append(final_text + "\n")
+                        except Exception as e:
+                            print("Exception writing to LOG Widget:" + str(e))
+                if self.console_enabled:
+                    if log_level in self.console_log_levels:
+                        final_text = f"{timestampStr:<{timestamp_length}}{color.color_code}{log_text}{color_reset.color_code}"
+                        print(final_text)
+                if self.file_enabled:
+                    if log_level in self.file_log_levels:
+                        final_text = f"{timestampStr:<{timestamp_length}}{log_text}\n"
+                        try:
+                            with open(f"{self.logs_folder}{self.log_filename}", "w+") as log_file:
+                                log_file.write(final_text)
+                                log_file.flush()
+                        except Exception as e:
+                            print("Exception writing to LOG File:" +str(e))
                 if self.pb_enabled:
-                    pb.push_note("Logger Test", f"{timestampStr}{log_text}")
+                    if log_level in self.pb_log_levels:
+                        self.pb.push_note("Logger Test", f"{timestampStr:<{timestamp_length}}{log_text}")
 
     def create_log_widget(self):
         self.logWidget = LogWidget(self)
@@ -373,23 +419,25 @@ class LogWidget(QWidget):
         self.filter_combobox = QComboBox()
         for key in self.logger.logging_levels.keys():
             self.filter_combobox.addItem(str(self.logger.logging_levels[key]) + " - " + key, key)
-        self.filter_combobox.currentIndexChanged.connect(self.on_combobox_changed)
-        self.enable_checkbox = QCheckBox("Enable")
-        self.enable_checkbox.stateChanged.connect(self.enable_checkbox_changed)
+        # self.filter_combobox.currentIndexChanged.connect(self.on_combobox_changed)
+        self.general_checkbox = QCheckBox("Enable")
+        self.general_checkbox.stateChanged.connect(self.general_checkbox_changed)
         self.console_checkbox = QCheckBox("Console")
         self.console_checkbox.stateChanged.connect(self.console_checkbox_changed)
         self.widget_checkbox = QCheckBox("Widget")
         self.widget_checkbox.stateChanged.connect(self.widget_checkbox_changed)
-        self.log_file_checkbox = QCheckBox("File")
-        self.log_file_checkbox.stateChanged.connect(self.log_file_checkbox_changed)
-
+        self.file_checkbox = QCheckBox("File")
+        self.file_checkbox.stateChanged.connect(self.file_checkbox_changed)
+        self.pb_checkbox = QCheckBox("PB")
+        self.pb_checkbox.stateChanged.connect(self.pb_checkbox_changed)
         self.extra_layout.addWidget(self.title)
         self.extra_layout.addWidget(self.filter_label)
         self.extra_layout.addWidget(self.filter_combobox)
-        self.extra_layout.addWidget(self.enable_checkbox)
+        self.extra_layout.addWidget(self.general_checkbox)
         self.extra_layout.addWidget(self.console_checkbox)
         self.extra_layout.addWidget(self.widget_checkbox)
-        self.extra_layout.addWidget(self.log_file_checkbox)
+        self.extra_layout.addWidget(self.file_checkbox)
+        self.extra_layout.addWidget(self.pb_checkbox)
         self.extra_layout.addStretch(1)
 
         self.main_layout.addLayout(self.extra_layout)
@@ -412,9 +460,9 @@ class LogWidget(QWidget):
         self.text_area.verticalScrollBar().setValue(self.text_area.verticalScrollBar().maximum())
 
     def on_combobox_changed(self, value):
-        self.logger.set_min_level(self.filter_combobox.itemData(value))
+        self.logger.set_general_logging_level(min_level=self.filter_combobox.itemData(value))
 
-    def enable_checkbox_changed(self, value):
+    def general_checkbox_changed(self, value):
         self.logger.toggle_general_logging(value)
         self.check_log_status()
 
@@ -426,21 +474,22 @@ class LogWidget(QWidget):
         self.logger.toggle_widget_logging(value)
         self.check_log_status()
 
-    def log_file_checkbox_changed(self, value):
+    def file_checkbox_changed(self, value):
         self.logger.toggle_file_logging(value)
         self.check_log_status()
 
+    def pb_checkbox_changed(self, value):
+        self.logger.toggle_pushbullet(value)
+        self.check_log_status()
+
     def check_log_status(self):
-        self.filter_combobox.setCurrentIndex(self.logger.get_min_level_index())
+        self.filter_combobox.setCurrentIndex(self.logger.get_logging_level_index(self.logger.general_log_levels[-1]))
 
-        self.enable_checkbox.setChecked(self.logger.enabled)
-        self.console_checkbox.setChecked(self.logger.enable_console)
-        self.widget_checkbox.setChecked(self.logger.enable_widget)
-        self.log_file_checkbox.setChecked(self.logger.save_to_file)
-
-        self.console_checkbox.setEnabled(self.logger.enabled)
-        self.widget_checkbox.setEnabled(self.logger.enabled)
-        self.log_file_checkbox.setEnabled(self.logger.enabled)
+        self.general_checkbox.setChecked(self.logger.general_enabled)
+        self.console_checkbox.setChecked(self.logger.console_enabled)
+        self.widget_checkbox.setChecked(self.logger.widget_enabled)
+        self.file_checkbox.setChecked(self.logger.file_enabled)
+        self.pb_checkbox.setChecked(self.logger.pb_enabled)
 
 class LoggableTaskSignals(QObject):
     started = Signal(str, dict)
