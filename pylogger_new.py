@@ -1,12 +1,19 @@
+import threading
+
 class Singleton:
   def __init__(self, cls):
-      self._cls = cls
+    self._cls = cls
+    self._lock = threading.Lock()
 
   def Instance(self):
     try:
       return self._instance
     except AttributeError:
-      self._instance = self._cls()
+      with self._lock:
+        # another thread could have created the instance
+        # before we acquired the lock. So check that the
+        # instance is still nonexistent.
+        self._instance = self._cls()
       return self._instance
 
   def __call__(self):
