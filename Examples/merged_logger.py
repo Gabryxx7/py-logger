@@ -2,11 +2,9 @@ import time
 from datetime import datetime
 import colorama
 import os
-
+import threading
 
 """ Logging meta classes """
-
-
 class LogLevel():
     class LogColor:
         def __init__(self, name, code, html, rgb):

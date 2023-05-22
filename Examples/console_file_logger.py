@@ -1,7 +1,12 @@
+# Either use the module
 from pylogger_new import Log
 from src.Widgets.console_widget import ConsoleLogWidget
 from src.Widgets.file_widget import FileLogWidget
 from src.Widgets.pygame_widget import PyGameLogWidget
+
+# Or import the merged single-file import
+# from py_logger import Log, FileLogWidget, ConsoleLogWidget, PyGameLogWidget
+
 import time
 
 log = Log.Instance()
