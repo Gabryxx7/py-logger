@@ -8,9 +8,10 @@ class ConsoleLogWidget(LogWidgetMeta):
         
     # @overload
     def append(self, tag, text, log_level='a', no_date=False, flush=True, color=None, **kwargs):  
-        text = super().format_txt(tag, text, no_date, log_level, **kwargs)
         color = LogWidgetMeta.log_levels[log_level].color.code
         end_char = kwargs.get('end', "\n")
+        if end_char == "\n":
+          text = super().format_txt(tag, text, no_date, log_level, **kwargs)
         self.text_lines.append(f" {color}{text}{self.color_reset.code}{end_char} ")
         if flush:
             self.flush_lines()
