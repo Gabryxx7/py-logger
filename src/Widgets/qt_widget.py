@@ -13,9 +13,10 @@ class LoggableTaskSignals(QObject):
     completed = Signal(str, dict)
 
 class LoggableTaskWorker(QRunnable):
-    def __init__(self, tag="LoggableTaskWorker"):
+    def __init__(self, tag="LoggableTaskWorker", id=""):
         super(LoggableTaskWorker, self).__init__()
         self.tag = tag
+        self.tag = f"{self.tag}{id}"
         self.logger_signals = LoggableTaskSignals()
 
 class QTLogWidget(QWidget, LogWidgetMeta):

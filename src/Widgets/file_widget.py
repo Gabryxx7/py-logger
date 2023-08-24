@@ -4,9 +4,10 @@ from datetime import datetime
 import os
 
 class FileLogWidget(LogWidgetMeta):
-    def __init__(self, min_log_level='a', filename=None, dir_path="logs"):
+    def __init__(self, min_log_level='a', filename=None, dir_path="logs", id=""):
         super(FileLogWidget, self).__init__(min_log_level)
         self.tag = "FileLogWidget"
+        self.tag = f"{self.tag}{id}"
         filename = f"log_{datetime.now().strftime('%d_%b_%Y-%H_%M_%S')}.txt" if filename is None else filename   
         self.log_file_path = f"{dir_path}/{filename}.txt" 
         if not os.path.exists(dir_path):

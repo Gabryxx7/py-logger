@@ -3,9 +3,10 @@ from typing import overload
 from .ui_widget import VisualLogWidget
 
 class PyGameLogWidget(VisualLogWidget):
-    def __init__(self, min_log_level='a', pygame=None, font=None, font_size=16, canvas=None):
+    def __init__(self, min_log_level='a', pygame=None, font=None, font_size=16, canvas=None, id=""):
         super(PyGameLogWidget, self).__init__(min_log_level, drawer=pygame, draw_type=VisualLogWidget.Type.PYGAME, canvas=canvas)
         self.tag = "PyGameLogWidget"
+        self.tag = f"{self.tag}{id}"
         self.font = pygame.font.SysFont('Arial', 16) if font is None else font
         self.font_size = font_size
         self.line_height = self.font_size*0.8

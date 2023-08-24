@@ -3,10 +3,11 @@ from typing import overload
 from .ui_widget import VisualLogWidget
 
 class CvLogWidget(VisualLogWidget):
-    def __init__(self, min_log_level='a', cv=None):
+    def __init__(self, min_log_level='a', cv=None, id=""):
         super(CvLogWidget, self).__init__(drawer=cv, draw_type=VisualLogWidget.Type.OPENCV)
         self.cv2 = cv
         self.tag = "CVLogWidget"
+        self.tag = f"{self.tag}{id}"
             
     # @overload
     def append(self, tag, text, log_level, flush=False, color=None, pos=None, font=None, font_size=1, line_height=None, **kwargs):

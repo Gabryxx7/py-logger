@@ -1,10 +1,10 @@
 from .widget_meta import LogWidgetMeta
-from typing import overload
 
 class ConsoleLogWidget(LogWidgetMeta):
-    def __init__(self, min_log_level='a'):
+    def __init__(self, min_log_level='a', id=""):
         super(ConsoleLogWidget, self).__init__(min_log_level)
         self.tag = "ConsoleLogWidget"
+        self.tag = f"{self.tag}{id}"
         
     # @overload
     def append(self, tag, text, log_level='a', no_date=False, flush=True, color=None, **kwargs):  

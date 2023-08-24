@@ -28,6 +28,11 @@ class Log(object):
     self.widgets = []
       
   def add_widget(self, widget):
+    for log_w in self.widgets:
+      if log_w.tag == widget.tag:
+        print(f"Log Widget {widget.tag} already added!")
+        return
+    print(f"Adding Log Widget {widget.tag}")
     self.widgets.append(widget)
       
   def w(self, tag, text, **kwargs):

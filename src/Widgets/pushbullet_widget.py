@@ -2,9 +2,10 @@ from .widget_meta import LogWidgetMeta
 from typing import overload
 
 class PushbulletLogWidget(LogWidgetMeta):
-    def __init__(self, min_log_level='a'):
+    def __init__(self, min_log_level='a', id=""):
         super(PushbulletLogWidget, self).__init__(min_log_level)
         self.tag = "PushbulletLogWidget"
+        self.tag = f"{self.tag}{id}"
 
     def append(self, tag, text, log_level, flush=True, color=None, **kwargs):  
         text = super().format_txt(tag, text, log_level, **kwargs)

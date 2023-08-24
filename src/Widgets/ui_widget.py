@@ -24,9 +24,10 @@ class VisualLogWidget(LogWidgetMeta):
             if line_height < 0:
                 self.line_height = self.font_size*0.8
 
-    def __init__(self, min_log_level='a', drawer=None, draw_type=None, canvas=None):
+    def __init__(self, min_log_level='a', drawer=None, draw_type=None, canvas=None, id=""):
         super(VisualLogWidget, self).__init__(min_log_level)
         self.tag = "VisualLogWidget"
+        self.tag = f"{self.tag}{id}"
         self.drawer = drawer
         self.draw_type = self.Type.NONE if draw_type is None else draw_type
         self.canvas = canvas
