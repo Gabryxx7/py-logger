@@ -26,12 +26,13 @@ class LogWidgetMeta:
                     'e': LogLevel(4, 'exception', 'red', "\033[91m", "<font color=\"Red\">", (255,0,0)),
                 }
         
-    def __init__(self, min_log_level='a'):
+    def __init__(self, min_log_level='a', auto_flush=False):
         self.tag = "LogWidgetMeta"
         self.min_log_level = 'a'
         self.log_level = self.min_log_level
         self.color_reset = LogLevel.LogColor('reset', "\033[0;0m", "</>", (255,255,255))
         self.enabled = True
+        self.auto_flush = auto_flush
         self.text_lines = []
 
     def set_min_log_level(self, level):
@@ -48,7 +49,7 @@ class LogWidgetMeta:
     def status_string(self, status):
         return "ENABLED" if status else "DISABLED"
     
-    def format_txt(self, tag, text, no_date, log_level='a', **kwargs):    
+    def format_txt(self, text, tag, no_date, log_level='a', **kwargs):    
         if self.log_levels[log_level].level < self.log_levels[self.min_log_level].level:
             return None
         
@@ -60,9 +61,10 @@ class LogWidgetMeta:
         return log_text
     
     # To be overridden
-    def append(self, tag, text, log_level, no_date=False, flush=True, **kwargs):
-        text = self.format_txt(tag, text, no_date, log_level, **kwargs)
+    def append(self, text, tag, log_level, no_date=False, flush=None, **kwargs):
+        text = self.format_txt(text, tag, no_date, log_level, **kwargs)
         self.text_lines.append(text)
+        flush = self.auto_flush if flush is None else flush
         if flush:
             self.flush_lines()
         return None

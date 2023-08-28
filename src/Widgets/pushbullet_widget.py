@@ -7,8 +7,8 @@ class PushbulletLogWidget(LogWidgetMeta):
         self.tag = "PushbulletLogWidget"
         self.tag = f"{self.tag}{id}"
 
-    def append(self, tag, text, log_level, flush=True, color=None, **kwargs):  
-        text = super().format_txt(tag, text, log_level, **kwargs)
+    def append(self, text, tag, log_level, flush=True, color=None, **kwargs):  
+        text = super().format_txt(text, tag, log_level, **kwargs)
         color = LogWidgetMeta.log_levels[log_level].color.code
         self.text_lines.append(text)
         if flush:

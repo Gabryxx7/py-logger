@@ -73,8 +73,8 @@ class QTLogWidget(QWidget, LogWidgetMeta):
         self.text_area.setFont(QFont(self.font_family, self.font_size))
 
     # @overload
-    def append(self, tag, text, log_level='a', no_date=False, flush=True, **kwargs):
-        text = self.format_txt(tag, text, no_date, log_level, **kwargs)
+    def append(self, text, tag, log_level='a', no_date=False, flush=True, **kwargs):
+        text = self.format_txt(text, tag, no_date, log_level, **kwargs)
         color = LogWidgetMeta.log_levels[log_level].color.html
         final_text = f"{color}{text}{self.color_reset.html}"
         self.text_lines.append(final_text)

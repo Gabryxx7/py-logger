@@ -47,12 +47,12 @@ class VisualLogWidget(LogWidgetMeta):
     def draw_circle(self, center, color, radius, thickness):
         pass
 
-    def append(self, tag, text, log_level, flush=False, no_date=False, color=None, pos=None, font=None, font_size=1, line_height=None, thickness=1, **kwargs):
+    def append(self, text, tag, log_level, flush=False, no_date=False, color=None, pos=None, font=None, font_size=1, line_height=None, thickness=1, **kwargs):
         if pos is None:
             pos = VisualLogWidget.Point(10, 10)
         elif len(pos) > 1:
             pos = VisualLogWidget.Point(pos[0], pos[1])
-        text = super().format_txt(tag, text, log_level, **kwargs)
+        text = super().format_txt(text, tag, log_level, **kwargs)
         font = self.font if font is None else font
         font_size == self.font_size if font_size is None else font_size
         line_height = self.line_height if line_height is None else line_height

@@ -26,6 +26,7 @@ class Singleton:
 class Log(object):
   def __init__(self):
     self.widgets = []
+    self.global_tag = ""
       
   def add_widget(self, widget):
     for log_w in self.widgets:
@@ -34,26 +35,30 @@ class Log(object):
         return
     print(f"Adding Log Widget {widget.tag}")
     self.widgets.append(widget)
+
+  def set_global_tag(self, tag):
+    self.global_tag = tag
       
-  def w(self, tag, text, **kwargs):
-    return self.append(tag, text, 'w', **kwargs)
+  def w(self, text, tag=None, **kwargs):
+    return self.append(text, tag, 'w', **kwargs)
 
-  def d(self, tag, text, **kwargs):
-    return self.append(tag, text, 'd', **kwargs)
+  def d(self, text, tag=None, **kwargs):
+    return self.append(text, tag, 'd', **kwargs)
 
-  def e(self, tag, text, **kwargs):
-    return self.append(tag, text, 'e', **kwargs)
+  def e(self, text, tag=None, **kwargs):
+    return self.append(text, tag, 'e', **kwargs)
 
-  def s(self, tag, text, **kwargs):
-    return self.append(tag, text, 's', **kwargs)
+  def s(self, text, tag=None, **kwargs):
+    return self.append(text, tag, 's', **kwargs)
 
-  def i(self, tag, text, **kwargs):
-    return self.append(tag, text, 'i', **kwargs)
+  def i(self, text, tag=None, **kwargs):
+    return self.append(text, tag, 'i', **kwargs)
 
-  def append(self, tag, text, log_level='a', **kwargs):
+  def append(self, text, tag=None, log_level='a', **kwargs):
+    tag = self.global_tag if tag is None else tag
     pos = 0
     for widget in self.widgets:
-      res = widget.append(tag, text, log_level, **kwargs)    
+      res = widget.append(text, tag, log_level, **kwargs)    
       if res is not None:
         pos = res      
     return pos

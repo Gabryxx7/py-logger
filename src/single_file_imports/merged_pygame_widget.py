@@ -26,6 +26,7 @@ class Singleton:
 class Log(object):
   def __init__(self):
     self.widgets = []
+    self.global_tag = ""
       
   def add_widget(self, widget):
     for log_w in self.widgets:
@@ -34,26 +35,30 @@ class Log(object):
         return
     print(f"Adding Log Widget {widget.tag}")
     self.widgets.append(widget)
+
+  def set_global_tag(self, tag):
+    self.global_tag = tag
       
-  def w(self, tag, text, **kwargs):
-    return self.append(tag, text, 'w', **kwargs)
+  def w(self, text, tag=None, **kwargs):
+    return self.append(text, tag, 'w', **kwargs)
 
-  def d(self, tag, text, **kwargs):
-    return self.append(tag, text, 'd', **kwargs)
+  def d(self, text, tag=None, **kwargs):
+    return self.append(text, tag, 'd', **kwargs)
 
-  def e(self, tag, text, **kwargs):
-    return self.append(tag, text, 'e', **kwargs)
+  def e(self, text, tag=None, **kwargs):
+    return self.append(text, tag, 'e', **kwargs)
 
-  def s(self, tag, text, **kwargs):
-    return self.append(tag, text, 's', **kwargs)
+  def s(self, text, tag=None, **kwargs):
+    return self.append(text, tag, 's', **kwargs)
 
-  def i(self, tag, text, **kwargs):
-    return self.append(tag, text, 'i', **kwargs)
+  def i(self, text, tag=None, **kwargs):
+    return self.append(text, tag, 'i', **kwargs)
 
-  def append(self, tag, text, log_level='a', **kwargs):
+  def append(self, text, tag=None, log_level='a', **kwargs):
+    tag = self.global_tag if tag is None else tag
     pos = 0
     for widget in self.widgets:
-      res = widget.append(tag, text, log_level, **kwargs)    
+      res = widget.append(text, tag, log_level, **kwargs)    
       if res is not None:
         pos = res      
     return pos
@@ -118,12 +123,13 @@ class LogWidgetMeta:
                     'e': LogLevel(4, 'exception', 'red', "\033[91m", "<font color=\"Red\">", (255,0,0)),
                 }
         
-    def __init__(self, min_log_level='a'):
+    def __init__(self, min_log_level='a', auto_flush=False):
         self.tag = "LogWidgetMeta"
         self.min_log_level = 'a'
         self.log_level = self.min_log_level
         self.color_reset = LogLevel.LogColor('reset', "\033[0;0m", "</>", (255,255,255))
         self.enabled = True
+        self.auto_flush = auto_flush
         self.text_lines = []
 
     def set_min_log_level(self, level):
@@ -140,7 +146,7 @@ class LogWidgetMeta:
     def status_string(self, status):
         return "ENABLED" if status else "DISABLED"
     
-    def format_txt(self, tag, text, no_date, log_level='a', **kwargs):    
+    def format_txt(self, text, tag, no_date, log_level='a', **kwargs):    
         if self.log_levels[log_level].level < self.log_levels[self.min_log_level].level:
             return None
         
@@ -152,9 +158,10 @@ class LogWidgetMeta:
         return log_text
     
     # To be overridden
-    def append(self, tag, text, log_level, no_date=False, flush=True, **kwargs):
-        text = self.format_txt(tag, text, no_date, log_level, **kwargs)
+    def append(self, text, tag, log_level, no_date=False, flush=None, **kwargs):
+        text = self.format_txt(text, tag, no_date, log_level, **kwargs)
         self.text_lines.append(text)
+        flush = self.auto_flush if flush is None else flush
         if flush:
             self.flush_lines()
         return None
@@ -175,28 +182,42 @@ class LogWidgetMeta:
     def on_logging_level_changed(self, new_logging_level):
         pass
 
+from typing import overload
+from .ui_widget import VisualLogWidget
 
-class ConsoleLogWidget(LogWidgetMeta):
-    def __init__(self, min_log_level='a', id=""):
-        super(ConsoleLogWidget, self).__init__(min_log_level)
-        self.tag = "ConsoleLogWidget"
+class PyGameLogWidget(VisualLogWidget):
+    def __init__(self, min_log_level='a', pygame=None, font=None, font_size=16, canvas=None, id=""):
+        super(PyGameLogWidget, self).__init__(min_log_level, drawer=pygame, draw_type=VisualLogWidget.Type.PYGAME, canvas=canvas)
+        self.tag = "PyGameLogWidget"
         self.tag = f"{self.tag}{id}"
-        
-    # @overload
-    def append(self, tag, text, log_level='a', no_date=False, flush=True, color=None, **kwargs):  
-        color = LogWidgetMeta.log_levels[log_level].color.code
-        end_char = kwargs.get('end', "\n")
-        if end_char == "\n":
-          text = super().format_txt(tag, text, no_date, log_level, **kwargs)
-        self.text_lines.append(f" {color}{text}{self.color_reset.code}{end_char} ")
-        if flush:
-            self.flush_lines()
-        return None
+        self.font = pygame.font.SysFont('Arial', 16) if font is None else font
+        self.font_size = font_size
+        self.line_height = self.font_size*0.8
             
     # @overload
-    def flush_lines(self):
+    def append(self, text, tag, log_level, flush=False, color=None, pos=None, font=None, font_size=1, line_height=None, **kwargs):
+        return super().append(text, tag, log_level, flush, color, pos, font, font_size, line_height, **kwargs)
+    
+       # @overload
+    def flush_lines(self, draw=True, canvas=None, debug=False):
+        super().flush_lines(draw, canvas, debug)
         while len(self.text_lines) > 0:
-            line = self.text_lines.pop(0)
-            print(line, end="")
-        return None
+            line = self.text_lines.pop()
+            if draw:
+                try:
+                    self.draw_text_line(line, canvas)
+                except Exception as e:
+                    print(f"[{self.tag}] Error printing line '{line.text}': {e}")
+        if debug:
+            print(f"[{self.tag}] Remaining {len(self.text_lines)} lines")
+            
+    def draw_text_line(self, line, canvas=None):
+        canvas = self.canvas if canvas is None else canvas
+        canvas.blit(line.font.render(line.text, True, line.color), (int(line.pos.x), int(line.pos.y)))
+    
+    def draw_line(self, start, end, color, thickness):
+        self.drawer.draw.line(self.canvas, color=color, start_pos=(int(start.x), int(start.y)), end_pos=(int(end.x), int(end.y)), width=thickness)
+        
+    def draw_circle(self, center, color, radius, thickness):
+        self.drawer.draw.circle(self.canvas, color=color, center=(int(center.x), int(center.y)), radius=radius, width=thickness)
 

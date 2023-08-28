@@ -64,8 +64,8 @@ class LogWidgetMeta:
         return log_text
 
     # To be overridden
-    def append(self, tag, text, log_level, no_date=False, flush=True, **kwargs):
-        text = self.format_txt(tag, text, no_date, log_level, **kwargs)
+    def append(self, text, tag, log_level, no_date=False, flush=True, **kwargs):
+        text = self.format_txt(text, tag, no_date, log_level, **kwargs)
         self.text_lines.append(text)
         if flush:
             self.flush_lines()
@@ -116,8 +116,8 @@ class ConsoleLogWidget(LogWidgetMeta):
         self.tag = "ConsoleLogWidget"
 
     # @overload
-    def append(self, tag, text, log_level='a', no_date=False, flush=True, color=None, **kwargs):
-        text = super().format_txt(tag, text, no_date, log_level, **kwargs)
+    def append(self, text, tag, log_level='a', no_date=False, flush=True, color=None, **kwargs):
+        text = super().format_txt(text, tag, no_date, log_level, **kwargs)
         color = LogWidgetMeta.log_levels[log_level].color.code
         self.text_lines.append(f"{color}{text}{self.color_reset.code}")
         if flush:
@@ -177,12 +177,12 @@ class VisualLogWidget(LogWidgetMeta):
     def draw_circle(self, center, color, radius, thickness):
         pass
 
-    def append(self, tag, text, log_level, flush=False, no_date=False, color=None, pos=None, font=None, font_size=1, line_height=None, thickness=1, **kwargs):
+    def append(self, text, tag, log_level, flush=False, no_date=False, color=None, pos=None, font=None, font_size=1, line_height=None, thickness=1, **kwargs):
         if pos is None:
             pos = VisualLogWidget.Point(10, 10)
         elif len(pos) > 1:
             pos = VisualLogWidget.Point(pos[0], pos[1])
-        text = super().format_txt(tag, text, log_level, **kwargs)
+        text = super().format_txt(text, tag, log_level, **kwargs)
         font = self.font if font is None else font
         font_size == self.font_size if font_size is None else font_size
         line_height = self.line_height if line_height is None else line_height
@@ -207,8 +207,8 @@ class CvLogWidget(VisualLogWidget):
         self.tag = "CVLogWidget"
 
     # @overload
-    def append(self, tag, text, log_level, flush=False, color=None, pos=None, font=None, font_size=1, line_height=None, **kwargs):
-        return super().append(tag, text, log_level, flush, color, pos, font, font_size, line_height, **kwargs)
+    def append(self, text, tag, log_level, flush=False, color=None, pos=None, font=None, font_size=1, line_height=None, **kwargs):
+        return super().append(text, tag, log_level, flush, color, pos, font, font_size, line_height, **kwargs)
 
        # @overload
     def flush_lines(self, draw=True, canvas=None, debug=False):
@@ -247,8 +247,8 @@ class PyGameLogWidget(VisualLogWidget):
         self.line_height = self.font_size*0.8
 
     # @overload
-    def append(self, tag, text, log_level, flush=False, color=None, pos=None, font=None, font_size=1, line_height=None, **kwargs):
-        return super().append(tag, text, log_level, flush, color, pos, font, font_size, line_height, **kwargs)
+    def append(self, text, tag, log_level, flush=False, color=None, pos=None, font=None, font_size=1, line_height=None, **kwargs):
+        return super().append(text, tag, log_level, flush, color, pos, font, font_size, line_height, **kwargs)
 
        # @overload
     def flush_lines(self, draw=True, canvas=None, debug=False):
@@ -308,25 +308,26 @@ class Log(object):
     def add_widget(self, widget):
         self.widgets.append(widget)
 
-    def w(self, tag, text, **kwargs):
-        return self.append(tag, text, 'w', **kwargs)
+    def w(self, text, tag=None, **kwargs):
+        return self.append(text, tag, 'w', **kwargs)
 
-    def d(self, tag, text, **kwargs):
-        return self.append(tag, text, 'd', **kwargs)
+    def d(self, text, tag=None, **kwargs):
+        return self.append(text, tag, 'd', **kwargs)
 
-    def e(self, tag, text, **kwargs):
-        return self.append(tag, text, 'e', **kwargs)
+    def e(self, text, tag=None, **kwargs):
+        return self.append(text, tag, 'e', **kwargs)
 
-    def s(self, tag, text, **kwargs):
-        return self.append(tag, text, 's', **kwargs)
+    def s(self, text, tag=None, **kwargs):
+        return self.append(text, tag, 's', **kwargs)
 
-    def i(self, tag, text, **kwargs):
-        return self.append(tag, text, 'i', **kwargs)
+    def i(self, text, tag=None, **kwargs):
+        return self.append(text, tag, 'i', **kwargs)
 
-    def append(self, tag, text, log_level='a', **kwargs):
+    def append(self, text, tag=None, log_level='a', **kwargs):
+    tag = self.global_tag if tag is None else tag
         pos = 0
         for widget in self.widgets:
-            res = widget.append(tag, text, log_level, **kwargs)
+            res = widget.append(text, tag, log_level, **kwargs)
             if res is not None:
                 pos = res
         return pos

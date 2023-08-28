@@ -26,6 +26,7 @@ class Singleton:
 class Log(object):
   def __init__(self):
     self.widgets = []
+    self.global_tag = ""
       
   def add_widget(self, widget):
     for log_w in self.widgets:
@@ -34,26 +35,30 @@ class Log(object):
         return
     print(f"Adding Log Widget {widget.tag}")
     self.widgets.append(widget)
+
+  def set_global_tag(self, tag):
+    self.global_tag = tag
       
-  def w(self, tag, text, **kwargs):
-    return self.append(tag, text, 'w', **kwargs)
+  def w(self, text, tag=None, **kwargs):
+    return self.append(text, tag, 'w', **kwargs)
 
-  def d(self, tag, text, **kwargs):
-    return self.append(tag, text, 'd', **kwargs)
+  def d(self, text, tag=None, **kwargs):
+    return self.append(text, tag, 'd', **kwargs)
 
-  def e(self, tag, text, **kwargs):
-    return self.append(tag, text, 'e', **kwargs)
+  def e(self, text, tag=None, **kwargs):
+    return self.append(text, tag, 'e', **kwargs)
 
-  def s(self, tag, text, **kwargs):
-    return self.append(tag, text, 's', **kwargs)
+  def s(self, text, tag=None, **kwargs):
+    return self.append(text, tag, 's', **kwargs)
 
-  def i(self, tag, text, **kwargs):
-    return self.append(tag, text, 'i', **kwargs)
+  def i(self, text, tag=None, **kwargs):
+    return self.append(text, tag, 'i', **kwargs)
 
-  def append(self, tag, text, log_level='a', **kwargs):
+  def append(self, text, tag=None, log_level='a', **kwargs):
+    tag = self.global_tag if tag is None else tag
     pos = 0
     for widget in self.widgets:
-      res = widget.append(tag, text, log_level, **kwargs)    
+      res = widget.append(text, tag, log_level, **kwargs)    
       if res is not None:
         pos = res      
     return pos
@@ -118,12 +123,13 @@ class LogWidgetMeta:
                     'e': LogLevel(4, 'exception', 'red', "\033[91m", "<font color=\"Red\">", (255,0,0)),
                 }
         
-    def __init__(self, min_log_level='a'):
+    def __init__(self, min_log_level='a', auto_flush=False):
         self.tag = "LogWidgetMeta"
         self.min_log_level = 'a'
         self.log_level = self.min_log_level
         self.color_reset = LogLevel.LogColor('reset', "\033[0;0m", "</>", (255,255,255))
         self.enabled = True
+        self.auto_flush = auto_flush
         self.text_lines = []
 
     def set_min_log_level(self, level):
@@ -140,7 +146,7 @@ class LogWidgetMeta:
     def status_string(self, status):
         return "ENABLED" if status else "DISABLED"
     
-    def format_txt(self, tag, text, no_date, log_level='a', **kwargs):    
+    def format_txt(self, text, tag, no_date, log_level='a', **kwargs):    
         if self.log_levels[log_level].level < self.log_levels[self.min_log_level].level:
             return None
         
@@ -152,9 +158,10 @@ class LogWidgetMeta:
         return log_text
     
     # To be overridden
-    def append(self, tag, text, log_level, no_date=False, flush=True, **kwargs):
-        text = self.format_txt(tag, text, no_date, log_level, **kwargs)
+    def append(self, text, tag, log_level, no_date=False, flush=None, **kwargs):
+        text = self.format_txt(text, tag, no_date, log_level, **kwargs)
         self.text_lines.append(text)
+        flush = self.auto_flush if flush is None else flush
         if flush:
             self.flush_lines()
         return None
@@ -175,72 +182,31 @@ class LogWidgetMeta:
     def on_logging_level_changed(self, new_logging_level):
         pass
 
-from typing import overload
 
-class VisualLogWidget(LogWidgetMeta):
-    class Type:
-        NONE = "None"
-        OPENCV = 'cv'
-        PYGAME = 'pygame'
-        
-    class Point:
-        def __init__(self, x, y):
-            self.x = x
-            self.y = y
-            
-    class DebugTextLine:
-        def __init__(self, text, color, pos, font=None, font_size=0.4, line_height=-1, thickness=1):
-            self.text = text
-            self.color = color
-            self.pos = pos
-            self.font = font
-            self.font_size = font_size
-            self.thickness = thickness
-            self.line_height = line_height
-            if line_height < 0:
-                self.line_height = self.font_size*0.8
-
-    def __init__(self, min_log_level='a', drawer=None, draw_type=None, canvas=None, id=""):
-        super(VisualLogWidget, self).__init__(min_log_level)
-        self.tag = "VisualLogWidget"
+class ConsoleLogWidget(LogWidgetMeta):
+    def __init__(self, min_log_level='a', id="", auto_flush=True):
+        super(ConsoleLogWidget, self).__init__(min_log_level, auto_flush)
+        self.tag = "ConsoleLogWidget"
         self.tag = f"{self.tag}{id}"
-        self.drawer = drawer
-        self.draw_type = self.Type.NONE if draw_type is None else draw_type
-        self.canvas = canvas
-        self.font = None
-        self.font_size = 20
-        self.line_height = 20
-
-    def set_canvas(self, canvas):
-        self.canvas = canvas
-
-    def draw_text_line(self, start, end, color, thickness):
-        pass
-
-    def draw_line(self, start, end, color, thickness):
-        pass
-
-    def draw_circle(self, center, color, radius, thickness):
-        pass
-
-    def append(self, tag, text, log_level, flush=False, no_date=False, color=None, pos=None, font=None, font_size=1, line_height=None, thickness=1, **kwargs):
-        if pos is None:
-            pos = VisualLogWidget.Point(10, 10)
-        elif len(pos) > 1:
-            pos = VisualLogWidget.Point(pos[0], pos[1])
-        text = super().format_txt(tag, text, log_level, **kwargs)
-        font = self.font if font is None else font
-        font_size == self.font_size if font_size is None else font_size
-        line_height = self.line_height if line_height is None else line_height
-        color = LogWidgetMeta.log_levels[log_level].color.rgb if color is None else color
-        self.text_lines.append(self.DebugTextLine(text, color, self.Point(pos.x, pos.y), font, font_size, thickness))
-        pos.y += line_height
-        return pos
-
-       # @overload
-    def flush_lines(self, draw=True, canvas=None, debug=False):
-        if debug:
-            print(f"[{self.tag}] Flushing {len(self.text_lines)} lines")
-        return 
-
+        
+    # @overload
+    def append(self, text, tag, log_level='a', no_date=False, flush=True, color=None, **kwargs):  
+        color = LogWidgetMeta.log_levels[log_level].color.code
+        end_char = kwargs.get('end', "\n")
+        prev_end = "\n" 
+        if len(self.text_lines) > 0:
+            prev_end = self.text_lines[-1][-1]
+        if len(self.text_lines) <= 0 or prev_end == "\n":
+          text = super().format_txt(text, tag, no_date, log_level, **kwargs)
+        self.text_lines.append(f"{color}{text}{self.color_reset.code}{end_char}")
+        if end_char == "\n":
+            self.flush_lines()
+        return None
+            
+    # @overload
+    def flush_lines(self):
+        while len(self.text_lines) > 0:
+            line = self.text_lines.pop(0)
+            print(line, end="")
+        return None
 

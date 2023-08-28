@@ -1,29 +1,41 @@
 import glob
 import os
 
-def get_def(*args, widget_file=""):
-   print(f"Making import for {args}")
+def get_def(*args, skip_lines=0):
    full_def = ""
    for def_file in args:
       with open(def_file, "r") as fp:
-         full_def += fp.read() + "\n"
-   with open(widget_file, "r") as fp:
-      widget_def = fp.read()
-      widget_def = widget_def.split('\n', 1)[1]
-      full_def += widget_def + "\n"
+         import_def = fp.read()
+         import_def = import_def.split('\n', skip_lines)[-1]
+         full_def += import_def + "\n"
    return full_def
 
 
 excludes = ["__init__.py", "widget_meta.py"]
+main_files = ["../pylogger_new.py", "./Widgets/widget_meta.py"]
+default_def = get_def(*main_files)
+all_defs = default_def
+
 widgets_files = glob.glob('./Widgets/*.py', recursive=True)
-main_file = "../pylogger_new.py"
-widget_main_file = "./Widgets/widget_meta.py"
 export_folder = "./single_file_imports/"
 
 for w_file in widgets_files:
    filename = os.path.basename(w_file)
    if os.path.basename(w_file) not in excludes:
-      merged = get_def(main_file, widget_main_file, widget_file=w_file)
-      with open(f"{export_folder}import_{filename}", "w") as fp:
+      print(f"Making import for {w_file}", end="")
+      merged = get_def(w_file, skip_lines=1)
+      all_defs += merged
+      full_path = f"{export_folder}merged_{filename}"
+      with open(full_path, "w") as fp:
+         fp.write(default_def)
          fp.write(merged)
          fp.flush()
+         print(f"\tWritten to file {full_path}")
+
+w_file = "ALL.py"
+full_path = f"{export_folder}merged_{w_file}"
+print(f"Making import for {w_file}", end="")
+with open(full_path, "w") as fp:
+   fp.write(all_defs)
+   fp.flush()
+   print(f"\tWritten to file {full_path}")
