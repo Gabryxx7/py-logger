@@ -1,4 +1,4 @@
-from pylogger_new import Log
+from main import Log
 from src.Widgets.opencv_widget import CvLogWidget
 
 import cv2
@@ -9,8 +9,9 @@ import numpy as np
 from sys import platform
 from src.Utils.fps_counter import FPSCounter
 
+
 class OpenCVCameraPlaceholder:
-    def __init__(self, size, color=(0,0,0), border_size=5):
+    def __init__(self, size, color=(0, 0, 0), border_size=5):
         self.color = color
         self.ready = True
         self.initialized = True
@@ -22,6 +23,7 @@ class OpenCVCameraPlaceholder:
 
     def get_frame(self):
         return self.frame
+
 
 class OpenCVCamera:
     def __init__(self, cam_id, size, cap_param, cam_name=None, border_size=5):
@@ -57,12 +59,12 @@ class OpenCVCamera:
             pass
         self.initialized = True
         if self.cam is None or not self.cam.isOpened():
-            print(res_str +" FAILED")
+            print(res_str + " FAILED")
             self.thread_started = False
             self._stop.set()
             return
         self.ready = True
-        print(res_str +" OPENED")
+        print(res_str + " OPENED")
         while self.thread_started:
             self.last_thread_name = threading.current_thread().name
             if self._stop.isSet():
@@ -104,6 +106,7 @@ class OpenCVCamera:
                 self.logger.flush(canvas=frame)
         return frame
 
+
 class OpenCVCamerasManager:
     def __init__(self, cols=5, max_idx=10):
         self.title = "Cameras Preview"
@@ -138,14 +141,14 @@ class OpenCVCamerasManager:
             cam = OpenCVCamera(idx, self.size, self.cap_param, cam_name)
             self.cameras.append(cam)
 
-        ### Test
+        # Test
         # self.cameras.append(OpenCVCameraPlaceholder(self.size, (255, 0 ,0)))
         # self.cameras.append(OpenCVCameraPlaceholder(self.size, (0, 255 ,0)))
         # self.cameras.append(OpenCVCameraPlaceholder(self.size, (0, 0 ,255)))
         # self.cameras.append(OpenCVCameraPlaceholder(self.size, (255, 0 ,0)))
         # self.cameras.append(OpenCVCameraPlaceholder(self.size, (0, 255 ,0)))
 
-        self.placeholder = OpenCVCameraPlaceholder(self.size, (0, 0 ,0))
+        self.placeholder = OpenCVCameraPlaceholder(self.size, (0, 0, 0))
 
     def get_collage(self):
         total_frames = 0
@@ -177,7 +180,7 @@ class OpenCVCamerasManager:
                     vstack.append(hstack)
                     hstack = []
         self.cameras = active_cams
-        ## Square up the grid
+        # Square up the grid
         if len(vstack) > 0 and len(hstack) > 0:
             while len(hstack) < self.cols:
                 hstack.append(self.placeholder.get_frame())
@@ -212,6 +215,7 @@ class OpenCVCamerasManager:
             if key == 27:  # exit on ESC
                 return
             # print(f"Active threads {threading.activeCount()}", end='\r')
+
 
 if __name__ == '__main__':
     manager = OpenCVCamerasManager()

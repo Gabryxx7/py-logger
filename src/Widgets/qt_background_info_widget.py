@@ -56,14 +56,14 @@ class QtWaitingSpinner(QWidget):
         for i in range(0, self._numberOfLines):
             painter.save()
             painter.translate(self._innerRadius + self._lineLength,
-                              self._innerRadius + self._lineLength)
+                            self._innerRadius + self._lineLength)
             rotateAngle = float(360 * i) / float(self._numberOfLines)
             painter.rotate(rotateAngle)
             painter.translate(self._innerRadius, 0)
             distance = self.lineCountDistanceFromPrimary(
                 i, self._currentCounter, self._numberOfLines)
             color = self.currentLineColor(distance, self._numberOfLines, self._trailFadePercentage,
-                                          self._minimumTrailOpacity, self._color)
+                                        self._minimumTrailOpacity, self._color)
             painter.setBrush(color)
             painter.drawRoundedRect(QRect(0, -self._lineWidth / 2, self._lineLength, self._lineWidth), self._roundness,
                                     self._roundness, Qt.RelativeSize)
@@ -260,7 +260,7 @@ class BackgroundTasksInfoWidget(QWidget):
         task.logger_signals.updated.connect(self.updateBackgroundTaskInfo)
         task.logger_signals.completed.connect(self.completeBackgroundTask)
         self.logger.i("THREADS", "Added new background task " + str(info) + " " + str(self.background_completed) +
-                   "/" + str(self.background_count_total) + " Tasks: " + str(self.background_tasks_list))
+                "/" + str(self.background_count_total) + " Tasks: " + str(self.background_tasks_list))
         return task
 
     def updateBackgroundTaskCount(self):
@@ -284,5 +284,5 @@ class BackgroundTasksInfoWidget(QWidget):
             self.background_count_label.setVisible(False)
         self.updateBackgroundTaskCount()
         self.logger.d("THREADS", "Completed background task " + str(info) + " " + str(self.background_completed) +
-                   "/" + str(self.background_count_total) + " Tasks: " + str(self.background_tasks_list))
+                "/" + str(self.background_count_total) + " Tasks: " + str(self.background_tasks_list))
 

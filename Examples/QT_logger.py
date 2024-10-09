@@ -1,5 +1,5 @@
 # from pylogger import *
-from pylogger_new import Log
+from main import Log
 from src.Widgets.qt_widget import *
 from src.Widgets.console_widget import *
 from PySide6.QtWidgets import *
@@ -25,7 +25,7 @@ class EventLoggerWorker(LoggableTaskWorker):
         self.tag = tag
 
     @Slot()
-    def run(self): # A slot takes no params
+    def run(self):  # A slot takes no params
         self.logger_signals.started.emit(self.tag, {self.tag})
         for i in range(len(self.msgs_list)):
             log_msg = self.msgs_list[i]
@@ -33,6 +33,7 @@ class EventLoggerWorker(LoggableTaskWorker):
             self.logger_signals.updated.emit(self.tag, {f"Msg {log_msg}/{len(self.msgs_list)} - Waiting for {waiting_time} seconds", i, len(self.msgs_list)})
             time.sleep(random.randint(self.min, self.max))
         self.logger_signals.completed.emit(self.tag, "HELLO!")
+
 
 class LogApp(QApplication):
     def __init__(self, *args, **kwargs):
@@ -59,21 +60,21 @@ class LogApp(QApplication):
 
         self.window.setWindowTitle("LogApp")
         self.window.setMinimumSize(600, 600)
-        
+
         self.main_widget = QWidget()
         self.main_hlayout = QHBoxLayout()
         self.main_hlayout.addWidget(self.loggerWidget, 30)
-        self.main_hlayout.setContentsMargins(0,0,0,0)
+        self.main_hlayout.setContentsMargins(0, 0, 0, 0)
         self.main_widget.setLayout(self.main_hlayout)
-        
+
         self.window.setCentralWidget(self.main_widget)
-        self.window.centralWidget().layout().setContentsMargins(0,0,0,0)
-        self.window.centralWidget().setContentsMargins(0,0,0,0)
+        self.window.centralWidget().layout().setContentsMargins(0, 0, 0, 0)
+        self.window.centralWidget().setContentsMargins(0, 0, 0, 0)
 
         self.window.show()
         msgs_list = self.generate_random_msgs_list(num_msgs=5)
         self.start_events_generator(tag="EventGenerator", n_workers=3, msgs_list=msgs_list, min_t=1, max_t=3)
-    
+
     def generate_random_msgs_list(self, num_msgs=10, msg_template="Test <num>"):
         return [msg_template.replace("<num>", str(i)) for i in range(0, num_msgs)]
 
@@ -93,8 +94,7 @@ class LogApp(QApplication):
 
     def thread_finished_callback(self, tag, data):
         self.logger.w(tag, "Completed! ")
-        
-        
+
 
 if __name__ == "__main__":
     app = LogApp()

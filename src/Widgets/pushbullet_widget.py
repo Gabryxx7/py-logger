@@ -15,7 +15,7 @@ class PushbulletLogWidget(LogWidgetMeta):
             self.flush_lines()
         return None
             
-       # @overload
+    # @overload
     def flush_lines(self):        
         while len(self.text_lines) > 0:
             self.pb.push_note("Logger Test", f"{timestampStr:<{timestamp_length}}{log_text}")

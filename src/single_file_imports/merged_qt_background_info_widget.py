@@ -1,99 +1,112 @@
+
+"""
+Author: @Gabryxx7 (https://github.com/Gabryxx7/)
+Repo: https://github.com/Gabryxx7/py-logger
+Updated: 09-10-2024
+"""
+
 import threading
 
+
 class Singleton:
-  def __init__(self, cls):
-    self._cls = cls
-    self._lock = threading.Lock()
+    def __init__(self, cls):
+        self._cls = cls
+        self._lock = threading.Lock()
 
-  def Instance(self):
-    try:
-      return self._instance
-    except AttributeError:
-      with self._lock:
-        # another thread could have created the instance
-        # before we acquired the lock. So check that the
-        # instance is still nonexistent.
-        self._instance = self._cls()
-      return self._instance
+    def Instance(self):
+        try:
+            return self._instance
+        except AttributeError:
+            with self._lock:
+                # another thread could have created the instance
+                # before we acquired the lock. So check that the
+                # instance is still nonexistent.
+                self._instance = self._cls()
+            return self._instance
 
-  def __call__(self):
-    raise TypeError('Singletons must be accessed through `Instance()`.')
+    def __call__(self):
+        raise TypeError('Singletons must be accessed through `Instance()`.')
 
-  def __instancecheck__(self, inst):
-    return isinstance(inst, self._cls)
+    def __instancecheck__(self, inst):
+        return isinstance(inst, self._cls)
+
 
 @Singleton
 class Log(object):
-  def __init__(self):
-    self.widgets = []
-    self.global_tag = ""
-      
-  def add_widget(self, widget):
-    for log_w in self.widgets:
-      if log_w.tag == widget.tag:
-        print(f"Log Widget {widget.tag} already added!")
-        return
-    print(f"Adding Log Widget {widget.tag}")
-    self.widgets.append(widget)
+    def __init__(self):
+        self.widgets = []
+        self.global_tag = ""
+        
+    def __call__(self, **kwargs):
+        return self.d(**kwargs)
 
-  def set_global_tag(self, tag):
-    self.global_tag = tag
-      
-  def w(self, text, tag=None, **kwargs):
-    return self.append(text, tag, 'w', **kwargs)
+    def add_widget(self, widget):
+        for log_w in self.widgets:
+            if log_w.tag == widget.tag:
+                print(f"Log Widget {widget.tag} already added!")
+                return
+        print(f"Adding Log Widget {widget.tag}")
+        self.widgets.append(widget)
+        return self
 
-  def d(self, text, tag=None, **kwargs):
-    return self.append(text, tag, 'd', **kwargs)
+    def set_global_tag(self, tag):
+        self.global_tag = tag
 
-  def e(self, text, tag=None, **kwargs):
-    return self.append(text, tag, 'e', **kwargs)
+    def w(self, text, tag=None, **kwargs):
+        return self.append(text, tag, 'w', **kwargs)
 
-  def s(self, text, tag=None, **kwargs):
-    return self.append(text, tag, 's', **kwargs)
+    def d(self, text, tag=None, **kwargs):
+        return self.append(text, tag, 'd', **kwargs)
 
-  def i(self, text, tag=None, **kwargs):
-    return self.append(text, tag, 'i', **kwargs)
+    def e(self, text, tag=None, **kwargs):
+        return self.append(text, tag, 'e', **kwargs)
 
-  def append(self, text, tag=None, log_level='a', **kwargs):
-    tag = self.global_tag if tag is None else tag
-    pos = 0
-    for widget in self.widgets:
-      res = widget.append(text, tag, log_level, **kwargs)    
-      if res is not None:
-        pos = res      
-    return pos
-    # if self.enabled:
-    #     color = self.colors[color_name]
-    #     color_reset = self.colors['reset']
-    #     if self.log_levels[log_level] >= self.log_levels[self.min_log_level]:
-    #         if self.enable_widget and log_to_widget and self.logWidget is not None:
-    #             try:
-    #                 final_text = timestampStr + color.color_html + " " + log_text + color_reset.color_html
-    #                 self.logWidget.append(final_text + "\n")
-    #             except Exception as e:
-    #                 print("Exception writing to LOG Widget:" + str(e))
-    #                 pass
-    #         if self.enable_console:
-    #             final_text = timestampStr + color.color_code + " " + log_text + color_reset.color_code
-    #             print(final_text)
-    #         if self.save_to_file:
-    #             try:
-    #                 self.file.write(timestampStr + log_text + "\n")
-    #             except Exception as e:
-    #                 print("Exception writing to LOG File:" +str(e))
-    #                 pass
-      
-  def flush(self, **kwargs):
-    for widget in self.widgets:
-      widget.flush_lines(**kwargs)
-          
-  def init(self):
-    for widget in self.widgets:
-      widget.init()
-      
-  def destroy(self):
-    for widget in self.widgets:
-      widget.destroy()
+    def s(self, text, tag=None, **kwargs):
+        return self.append(text, tag, 's', **kwargs)
+
+    def i(self, text, tag=None, **kwargs):
+        return self.append(text, tag, 'i', **kwargs)
+
+    def append(self, text, tag=None, log_level='a', **kwargs):
+        tag = self.global_tag if tag is None else tag
+        pos = 0
+        for widget in self.widgets:
+            res = widget.append(text, tag, log_level, **kwargs)
+            if res is not None:
+                pos = res
+        return pos
+        # if self.enabled:
+        #     color = self.colors[color_name]
+        #     color_reset = self.colors['reset']
+        #     if self.log_levels[log_level] >= self.log_levels[self.min_log_level]:
+        #         if self.enable_widget and log_to_widget and self.logWidget is not None:
+        #             try:
+        #                 final_text = timestampStr + color.color_html + " " + log_text + color_reset.color_html
+        #                 self.logWidget.append(final_text + "\n")
+        #             except Exception as e:
+        #                 print("Exception writing to LOG Widget:" + str(e))
+        #                 pass
+        #         if self.enable_console:
+        #             final_text = timestampStr + color.color_code + " " + log_text + color_reset.color_code
+        #             print(final_text)
+        #         if self.save_to_file:
+        #             try:
+        #                 self.file.write(timestampStr + log_text + "\n")
+        #             except Exception as e:
+        #                 print("Exception writing to LOG File:" +str(e))
+        #                 pass
+
+    def flush(self, **kwargs):
+        for widget in self.widgets:
+            widget.flush_lines(**kwargs)
+
+    def init(self):
+        for widget in self.widgets:
+            widget.init()
+
+    def destroy(self):
+        for widget in self.widgets:
+            widget.destroy()
 
 import time
 from datetime import datetime
@@ -239,14 +252,14 @@ class QtWaitingSpinner(QWidget):
         for i in range(0, self._numberOfLines):
             painter.save()
             painter.translate(self._innerRadius + self._lineLength,
-                              self._innerRadius + self._lineLength)
+                            self._innerRadius + self._lineLength)
             rotateAngle = float(360 * i) / float(self._numberOfLines)
             painter.rotate(rotateAngle)
             painter.translate(self._innerRadius, 0)
             distance = self.lineCountDistanceFromPrimary(
                 i, self._currentCounter, self._numberOfLines)
             color = self.currentLineColor(distance, self._numberOfLines, self._trailFadePercentage,
-                                          self._minimumTrailOpacity, self._color)
+                                        self._minimumTrailOpacity, self._color)
             painter.setBrush(color)
             painter.drawRoundedRect(QRect(0, -self._lineWidth / 2, self._lineLength, self._lineWidth), self._roundness,
                                     self._roundness, Qt.RelativeSize)
@@ -443,7 +456,7 @@ class BackgroundTasksInfoWidget(QWidget):
         task.logger_signals.updated.connect(self.updateBackgroundTaskInfo)
         task.logger_signals.completed.connect(self.completeBackgroundTask)
         self.logger.i("THREADS", "Added new background task " + str(info) + " " + str(self.background_completed) +
-                   "/" + str(self.background_count_total) + " Tasks: " + str(self.background_tasks_list))
+                "/" + str(self.background_count_total) + " Tasks: " + str(self.background_tasks_list))
         return task
 
     def updateBackgroundTaskCount(self):
@@ -467,6 +480,6 @@ class BackgroundTasksInfoWidget(QWidget):
             self.background_count_label.setVisible(False)
         self.updateBackgroundTaskCount()
         self.logger.d("THREADS", "Completed background task " + str(info) + " " + str(self.background_completed) +
-                   "/" + str(self.background_count_total) + " Tasks: " + str(self.background_tasks_list))
+                "/" + str(self.background_count_total) + " Tasks: " + str(self.background_tasks_list))
 
 

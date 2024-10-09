@@ -15,7 +15,7 @@ class PyGameLogWidget(VisualLogWidget):
     def append(self, text, tag, log_level, flush=False, color=None, pos=None, font=None, font_size=1, line_height=None, **kwargs):
         return super().append(text, tag, log_level, flush, color, pos, font, font_size, line_height, **kwargs)
     
-       # @overload
+    # @overload
     def flush_lines(self, draw=True, canvas=None, debug=False):
         super().flush_lines(draw, canvas, debug)
         while len(self.text_lines) > 0:
